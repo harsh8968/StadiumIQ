@@ -40,8 +40,15 @@ export function VenueHeatmap({ pois, density, onSelect, children }: Props) {
     <svg
       viewBox="0 0 1000 600"
       className="w-full h-full"
-      aria-label="Stadium venue map"
+      role="img"
+      aria-label="Stadium venue map with live crowd density for each point of interest"
     >
+      <title>Stadium venue map</title>
+      <desc>
+        Interactive venue floor plan showing points of interest coloured by live
+        crowd density. Green is low density, red is critical density. Each POI
+        is focusable and announces its current density to assistive technology.
+      </desc>
       {/* ── Venue shell ──────────────────────────────────────────────── */}
       <ellipse
         cx={500}
@@ -108,9 +115,16 @@ export function VenueHeatmap({ pois, density, onSelect, children }: Props) {
           <g
             key={poi.id}
             onClick={() => onSelect?.(poi.id)}
-            className="cursor-pointer"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect?.(poi.id);
+              }
+            }}
+            className="cursor-pointer focus:outline-none focus-visible:[&>circle:nth-child(2)]:stroke-sky-400"
             role="button"
-            aria-label={`${poi.name}, ${Math.round(d * 100)}% density`}
+            tabIndex={0}
+            aria-label={`${poi.name}, ${poi.type}, ${Math.round(d * 100)}% crowd density`}
           >
             {/* Glow ring — static, always present */}
             <circle
