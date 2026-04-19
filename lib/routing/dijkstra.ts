@@ -2,6 +2,12 @@ import type { VenueGraph } from "@/lib/schemas/graph";
 import type { DensityMap } from "@/lib/data/crowd";
 import { CROWD_PENALTY_MAX } from "@/lib/constants";
 
+/**
+ * Result of a crowd-weighted shortest-path query.
+ * - `path`: ordered list of node IDs from source to destination (inclusive).
+ * - `totalWeight`: sum of (baseDistance × crowd multiplier) along the path, in SVG units.
+ * - `etaSec`: walking-time estimate rounded to `etaRoundToSec` increments.
+ */
 export interface RouteResult {
   path: string[];
   totalWeight: number;
@@ -32,6 +38,21 @@ function edgeWeight(
   return baseWeight * (1 + CROWD_PENALTY_MAX * d);
 }
 
+/**
+ * Dijkstra over the venue graph with crowd-weighted edges.
+ *
+ * Edge weight = `baseDistance × (1 + CROWD_PENALTY_MAX × max(density[from], density[to]))`,
+ * so fully-red corridors cost up to 3× their physical length and the algorithm
+ * naturally routes around congestion instead of through it.
+ *
+ * @param graph  Venue routing graph (40 nodes, loaded once via `getGraph()`).
+ * @param from   Source node ID (typically `n-seat`).
+ * @param to     Destination node ID (any POI's `nodeId`).
+ * @param density Current density map keyed by node or POI ID, values in [0, 1].
+ * @param walkingSpeedSvgPerSec SVG units traversed per second at walking pace.
+ * @param etaRoundToSec Rounding granularity so the UI doesn't flicker per-second.
+ * @returns RouteResult, or null if no path exists.
+ */
 export function shortestPath(
   graph: VenueGraph,
   from: string,

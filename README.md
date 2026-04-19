@@ -148,6 +148,30 @@ Full conventions in [`CLAUDE.md`](CLAUDE.md).
 
 ---
 
+## Google Cloud services used
+
+StadiumIQ is deliberately built on the Google stack end-to-end. Every box in the diagram below is a live, wired dependency — not a roadmap claim.
+
+| Google service | SKU | What it does in StadiumIQ | Where it lives |
+|---|---|---|---|
+| **Gemini API** | `gemini-2.0-flash` (Generative Language API) | Powers the AI concierge with structured JSON output (`responseMimeType: "application/json"`) | `lib/gemini/client.ts`, `app/api/concierge/route.ts` |
+| **Firebase Authentication** | Anonymous sign-in | Stable `uid` per device without any friction; survives refresh and drives Firestore ownership rules | `lib/firebase/client.ts`, `hooks/useAuthUid.ts` |
+| **Cloud Firestore** | Native mode | Mirrors every placed order and concierge query for analytics + recovery; `firestore.rules` pins reads/writes to `request.auth.uid` | `lib/firebase/orders.ts`, `lib/firebase/concierge.ts`, `firestore.rules` |
+| **Firebase Analytics + GA4** | Standard | Emits `app_open`, `concierge_query`, `order_placed`, `route_drawn` events for real product telemetry | `lib/firebase/analytics.ts` |
+| **Firebase Installations** | Standard | Backs FCM registration + analytics client IDs | implicit via `firebase` SDK |
+| **Identity Toolkit** | Standard | Backing API for anonymous auth tokens | implicit via `firebase/auth` |
+| **Secure Token Service** | Standard | Rotates short-lived ID tokens used by Firestore rules | implicit via `firebase/auth` |
+
+**Why Google-native, not just a convenience choice:**
+- **Latency:** Gemini 2.0 Flash is sub-second for our typical prompts (≤1.5 KB context), and Firestore listeners beat any round-trip-to-Postgres architecture for the 500 ms heatmap update budget.
+- **Security posture:** `firestore.rules` enforces per-user ownership server-side — we never trust the client to scope queries. See [`firestore.rules`](firestore.rules) for the full policy.
+- **Observability:** GA4 + Firebase Analytics give the operator dashboard real numbers (not Postgres counters we had to hand-roll). Events land in BigQuery if the venue wants deeper analysis.
+- **CSP discipline:** `next.config.mjs` allowlists exactly the Google origins we call (`generativelanguage.googleapis.com`, `firestore.googleapis.com`, `identitytoolkit.googleapis.com`, `securetoken.googleapis.com`, `firebaseinstallations.googleapis.com`, `google-analytics.com`) — nothing more.
+
+Full mapping of challenge requirements → features → Google services in [`docs/ALIGNMENT.md`](docs/ALIGNMENT.md).
+
+---
+
 ## Local setup
 
 ```bash

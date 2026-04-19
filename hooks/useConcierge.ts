@@ -21,6 +21,12 @@ export interface UseConciergeResult {
   latestRecommendation: ConciergeRecommendation | null;
 }
 
+/**
+ * Concierge chat state + send API. Posts the full message history plus the
+ * user's current `nodeId` to `/api/concierge`, defensively parses the response
+ * through the Zod schema, and shows a friendly fallback on schema-parse or
+ * network failure. Never renders raw LLM text.
+ */
 export function useConcierge(): UseConciergeResult {
   const [messages, setMessages] = useState<ConciergeMessage[]>([GREETING]);
   const [loading, setLoading] = useState(false);

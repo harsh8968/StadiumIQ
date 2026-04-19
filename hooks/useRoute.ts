@@ -22,6 +22,12 @@ export interface UseRouteResult {
   loading: boolean;
 }
 
+/**
+ * Subscribe to live density and re-run Dijkstra from the user's seat whenever
+ * it changes. Returns the current crowd-weighted path + ETA.
+ *
+ * Pass `null` to clear any active route.
+ */
 export function useRoute(toPoiId: string | null): UseRouteResult {
   const [result, setResult] = useState<UseRouteResult>({ path: [], etaSec: 0, loading: false });
   const densityRef = useRef<DensityMap>({});

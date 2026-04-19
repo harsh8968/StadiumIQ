@@ -29,9 +29,26 @@ export type Order = z.infer<typeof OrderSchema>;
 
 // ── API request schemas ──────────────────────────────────────────────────────
 
+/**
+ * Hard caps for inbound order traffic. These defend against:
+ *  - unbounded request bodies (DoS)
+ *  - excessively long identifiers hiding payloads
+ *  - enormous cart submissions that would take forever to prepare
+ */
+export const ORDER_MAX_ITEMS = 20;
+export const ORDER_MAX_POI_ID_LEN = 64;
+export const ORDER_MAX_ITEM_QTY = 20;
+
 export const PlaceOrderRequestSchema = z.object({
-  poiId: z.string(),
-  items: z.array(OrderItemSchema).min(1),
+  poiId: z.string().min(1).max(ORDER_MAX_POI_ID_LEN),
+  items: z
+    .array(
+      OrderItemSchema.extend({
+        qty: z.number().int().positive().max(ORDER_MAX_ITEM_QTY),
+      }),
+    )
+    .min(1)
+    .max(ORDER_MAX_ITEMS),
 });
 export type PlaceOrderRequest = z.infer<typeof PlaceOrderRequestSchema>;
 

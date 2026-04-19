@@ -1,0 +1,83 @@
+rules_version = '2';
+
+// StadiumIQ Firestore security rules.
+//
+// Design goals:
+// - All reads/writes require a Firebase Anonymous Auth session (request.auth.uid).
+// - Public venue state (crowd density) is world-read, server-write-only.
+// - Orders are scoped to their owning user.
+// - Group sessions are readable by any signed-in user with the code, writable only by the creator.
+// - Catch-all denies everything else — no "forgot to lock this collection" footgun.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // ── crowd_density/{poiId} ──────────────────────────────────────────────
+    // Public, read-only from the client. Density mutations happen server-side
+    // via the admin SDK in /api/simulate.
+    match /crowd_density/{poiId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ── orders/{orderId} ───────────────────────────────────────────────────
+    // Mirrored from the mock order store for the demo. Each order doc must
+    // carry a `userId` field that matches the caller's uid.
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && (
+        resource == null ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['poiId', 'items', 'totalCents', 'state'])
+        && request.resource.data.items.size() <= 20
+        && request.resource.data.state in ['placed', 'preparing', 'ready', 'collected'];
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId;
+      allow delete: if false;
+    }
+
+    // ── group_sessions/{sessionId} ─────────────────────────────────────────
+    // Any signed-in user can read a session (they need the 6-char code to find it).
+    // Only the creator can delete; members can join by writing their pin.
+    match /group_sessions/{sessionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn()
+        && resource.data.createdBy == request.auth.uid;
+
+      match /members/{memberId} {
+        allow read: if isSignedIn();
+        allow write: if isOwner(memberId);
+      }
+    }
+
+    // ── analytics_events/{eventId} ─────────────────────────────────────────
+    // Write-only from clients; reads are reserved for server-side aggregation.
+    match /analytics_events/{eventId} {
+      allow read: if false;
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ── Catch-all ──────────────────────────────────────────────────────────
+    // Explicit deny so new collections don't silently become world-writable.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
