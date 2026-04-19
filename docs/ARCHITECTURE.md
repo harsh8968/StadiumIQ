@@ -239,4 +239,74 @@ Function config from `vercel.json`:
 
 ---
 
+## Security boundaries (Tier C hardening)
+
+Every `/api/*` route that mutates state composes three guards in order:
+
+```
+POST  →  rateLimit(key, max, windowMs)
+       →  Zod.safeParse(body)
+       →  handler logic
+       →  try/catch → sanitizedErrorResponse()  (never leaks stack/details)
+```
+
+| Route | Rate limit | Input schema | Error helper |
+|---|---|---|---|
+| `/api/concierge` | 20 / IP / 60s | `ConciergeRequestSchema` | in-route fallback + `sanitizedErrorResponse` |
+| `/api/order` | 10 / (IP + userId) / 60s | `PlaceOrderRequestSchema` (cart ≤ 20) | `sanitizedErrorResponse("api/order")` |
+| `/api/simulate` | 30 / IP / 60s | `SimulateRequestSchema` (event whitelist) | `sanitizedErrorResponse("api/simulate")` |
+
+Error boundaries in the UI tier:
+
+- `app/global-error.tsx` — root boundary, renders bare `<html>` when even the root layout fails.
+- `app/(app)/error.tsx` — fan-app boundary with retry button + reduced-motion-safe message.
+- `app/(public)/error.tsx` — landing-surface boundary.
+
+See [`SECURITY.md`](SECURITY.md) for the full threat model.
+
+---
+
+## Concierge request flow (Tier C detail)
+
+```mermaid
+sequenceDiagram
+    participant UI as /concierge UI
+    participant API as /api/concierge
+    participant RL as rateLimit
+    participant Zod as ConciergeRequestSchema
+    participant Gem as Gemini 2.0 Flash
+    participant Heur as heuristicConciergeReply
+    participant Dij as Dijkstra
+
+    UI->>API: POST {messages, userLocation}
+    API->>RL: rateLimit("concierge:<ip>", 20, 60s)
+    alt over budget
+        RL-->>API: { ok: false }
+        API-->>UI: 429 + RATE_LIMITED JSON
+    end
+    API->>Zod: safeParse(body)
+    alt invalid
+        Zod-->>API: failure
+        API-->>UI: 200 + FALLBACK JSON (no error detail)
+    end
+    API->>Gem: structuredChat(messages, schema, systemPrompt)
+    alt Gemini success
+        Gem-->>API: ConciergeResponse
+    else Gemini fails
+        Gem--xAPI: throws
+        API->>Heur: heuristicConciergeReply(lastUser, pois, density)
+        Heur-->>API: deterministic ConciergeResponse
+    end
+    API->>Dij: shortestPath(n-seat, poi.nodeId, density)
+    Dij-->>API: { path, etaSec }
+    API-->>UI: enrichWalkTime(response)
+```
+
+Guarantees:
+1. Every response is schema-valid — users never see raw LLM text.
+2. ETA is recomputed server-side from live density, not hallucinated.
+3. LLM outage still returns a real crowd-aware recommendation.
+
+---
+
 For **why** each of these choices was made (alternatives considered, trade-offs, cost model), see [`TECHNICAL.md`](TECHNICAL.md).
