@@ -4,7 +4,7 @@
 > A mobile PWA that makes a 60,000-seat stadium feel navigable — live crowd intelligence, crowd-weighted routing, virtual concession queues, and a Gemini-powered AI concierge. Built so the average fan stops losing 23 minutes of a 3-hour match to queues.
 
 **Live demo:** [stadium-iq-phi.vercel.app](https://stadium-iq-phi.vercel.app)
-**Stack:** Next.js 14 · TypeScript (strict) · Tailwind · Framer Motion · **Google Gemini 1.5 Flash** · **Firebase (Auth + Firestore + Analytics)** · **Google Analytics 4** · Zod · Vercel
+**Stack:** Next.js 14 · TypeScript (strict) · Tailwind · Framer Motion · **Google Gemini 2.0 Flash** · **Firebase (Auth + Firestore + Analytics)** · **Google Analytics 4** · Zod · Vercel
 **Status:** Hackathon build — production-deployed, mock-driven for demo, wired to real Google services (Gemini for concierge, Firebase anon-auth + Firestore order mirror, GA4 event tracking).
 
 ---
@@ -44,7 +44,7 @@ weight = baseDistance × (1 + CROWD_PENALTY_MAX × max(density[from], density[to
 
 ### 3. AI concierge (`/concierge`)
 
-Chat UI wired to **Google Gemini 1.5 Flash** (`@google/generative-ai`) with `responseMimeType: "application/json"` for structured output. Every request injects **the current live venue state** (all POI densities + user location + estimated wait times) into the system prompt, then forces a structured response via Zod schema:
+Chat UI wired to **Google Gemini 2.0 Flash** (`@google/generative-ai`) with `responseMimeType: "application/json"` for structured output. Every request injects **the current live venue state** (all POI densities + user location + estimated wait times) into the system prompt, then forces a structured response via Zod schema:
 
 ```ts
 const ConciergeResponseSchema = z.object({
@@ -135,7 +135,7 @@ Full market analysis and pitch in [`docs/PITCH.md`](docs/PITCH.md).
 |---|---|---|
 | Framework | Next.js 14 App Router + TS strict | Server components = tiny bundles, route handlers = zero-config API |
 | Styling | Tailwind + shadcn/ui + Framer Motion | Design-token discipline, production-grade micro-interactions |
-| LLM | Google Gemini `gemini-1.5-flash` | Native JSON mode, generous free tier, 1M-token context |
+| LLM | Google Gemini `gemini-2.0-flash` | Native JSON mode, generous free tier, 1M-token context |
 | Auth | Firebase Auth (anonymous) | Zero-friction fan onboarding, identity survives refresh |
 | Mirror store | Firestore (`orders`, `concierge_queries`) | Fire-and-forget secondary writes for analytics + recovery |
 | Analytics | Google Analytics 4 + Firebase Analytics | Real product telemetry (`app_open`, `concierge_query`, `order_placed`) |

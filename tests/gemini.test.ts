@@ -36,7 +36,7 @@ describe("structuredChat (Gemini)", () => {
 
     expect(out).toEqual({ reply: "hello", action: "info" });
     expect(getGenerativeModel).toHaveBeenCalledWith(
-      expect.objectContaining({ model: "gemini-1.5-flash" }),
+      expect.objectContaining({ model: "gemini-2.0-flash" }),
     );
   });
 

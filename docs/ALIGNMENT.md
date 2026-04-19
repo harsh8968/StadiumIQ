@@ -13,7 +13,7 @@ This document maps every grading axis in the hackathon brief onto the concrete f
 |---|---|---|---|
 | Fans waste ~23 min / 3-hour event in lines | Live crowd heatmap (500 ms latency) | `app/(app)/map/page.tsx`, `components/map/VenueHeatmap.tsx`, `app/api/density/route.ts` | — (mock store) |
 | "Which way do I go?" corridor congestion | Crowd-weighted Dijkstra routing | `lib/routing/index.ts`, `components/map/RouteOverlay.tsx`, `public/venue/graph.json` | — |
-| "What's the shortest veggie option right now?" | Gemini-powered AI concierge with live venue state injected + structured JSON output | `app/api/concierge/route.ts`, `lib/gemini/client.ts`, `app/(app)/concierge/page.tsx` | **Google Gemini 1.5 Flash** |
+| "What's the shortest veggie option right now?" | Gemini-powered AI concierge with live venue state injected + structured JSON output | `app/api/concierge/route.ts`, `lib/gemini/client.ts`, `app/(app)/concierge/page.tsx` | **Google Gemini 2.0 Flash** |
 | Concession lines eat half-time | Virtual queue, 4-digit pickup code, state machine | `app/(app)/order/page.tsx`, `app/api/order/route.ts`, `lib/mock/orderStore.ts`, `lib/firebase/orders.ts` | **Firestore** (mirror write) |
 | Anonymous fan identity across refreshes | Firebase Anonymous Auth | `components/shared/FirebaseBoot.tsx`, `lib/firebase/client.ts` | **Firebase Auth** |
 | Operators need usage telemetry | GA4 + Firebase Analytics event tracking (`app_open`, `concierge_query`, `order_placed`) | `lib/firebase/analytics.ts`, `components/shared/FirebaseBoot.tsx` | **Google Analytics 4**, **Firebase Analytics** |
@@ -24,7 +24,7 @@ This document maps every grading axis in the hackathon brief onto the concrete f
 
 ## 2. Google Services Usage (detailed)
 
-### 2.1 Google Gemini (`gemini-1.5-flash`)
+### 2.1 Google Gemini (`gemini-2.0-flash`)
 
 - **SDK:** `@google/generative-ai@^0.24.1`
 - **Client:** `lib/gemini/client.ts` — wraps `GoogleGenerativeAI.getGenerativeModel` with:
