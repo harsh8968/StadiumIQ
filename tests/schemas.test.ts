@@ -142,3 +142,206 @@ describe("ConciergeResponseSchema", () => {
     expect(res.success).toBe(false);
   });
 });
+
+// ── CrowdDensitySchema ─────────────────────────────────────────────────────
+
+import { DensitySchema, CrowdStateSchema } from "@/lib/schemas/crowd";
+
+describe("DensitySchema", () => {
+  it("accepts a valid density reading", () => {
+    const result = DensitySchema.safeParse({
+      poiId: "food-burger",
+      density: 0.75,
+      timestamp: Date.now(),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects density below 0", () => {
+    const result = DensitySchema.safeParse({
+      poiId: "food-burger",
+      density: -0.1,
+      timestamp: Date.now(),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects density above 1", () => {
+    const result = DensitySchema.safeParse({
+      poiId: "food-burger",
+      density: 1.1,
+      timestamp: Date.now(),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts density exactly at 0", () => {
+    const result = DensitySchema.safeParse({
+      poiId: "restroom-a",
+      density: 0,
+      timestamp: 1000,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts density exactly at 1", () => {
+    const result = DensitySchema.safeParse({
+      poiId: "gate-north",
+      density: 1,
+      timestamp: 2000,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a missing poiId", () => {
+    const result = DensitySchema.safeParse({ density: 0.5, timestamp: 100 });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a missing timestamp", () => {
+    const result = DensitySchema.safeParse({ poiId: "x", density: 0.5 });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("CrowdStateSchema", () => {
+  it("accepts an empty crowd state (no pois active)", () => {
+    const result = CrowdStateSchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a valid crowd state with multiple POIs", () => {
+    const result = CrowdStateSchema.safeParse({
+      "food-burger": { poiId: "food-burger", density: 0.4, timestamp: 1000 },
+      "restroom-a": { poiId: "restroom-a", density: 0.9, timestamp: 1001 },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a crowd state where a POI density is out of range", () => {
+    const result = CrowdStateSchema.safeParse({
+      "food-burger": { poiId: "food-burger", density: 2.0, timestamp: 1000 },
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ── GroupSessionSchema / MemberPinSchema ───────────────────────────────────
+
+import {
+  GroupSessionSchema,
+  MemberPinSchema,
+  JoinSessionInputSchema,
+} from "@/lib/schemas/session";
+
+describe("MemberPinSchema", () => {
+  it("accepts a valid member pin with coords", () => {
+    const result = MemberPinSchema.safeParse({
+      userId: "u-1",
+      displayName: "Harsh",
+      poiId: "food-burger",
+      coords: { x: 120, y: 80 },
+      updatedAt: Date.now(),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a member pin with null poiId and null coords", () => {
+    const result = MemberPinSchema.safeParse({
+      userId: "u-2",
+      displayName: "Priya",
+      poiId: null,
+      coords: null,
+      updatedAt: Date.now(),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a missing userId", () => {
+    const result = MemberPinSchema.safeParse({
+      displayName: "No ID",
+      poiId: null,
+      coords: null,
+      updatedAt: 0,
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("GroupSessionSchema", () => {
+  it("accepts a valid group session", () => {
+    const result = GroupSessionSchema.safeParse({
+      code: "ABC123",
+      createdBy: "u-1",
+      members: [
+        {
+          userId: "u-1",
+          displayName: "Harsh",
+          poiId: null,
+          coords: null,
+          updatedAt: Date.now(),
+        },
+      ],
+      createdAt: Date.now(),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a code shorter than 6 characters", () => {
+    const result = GroupSessionSchema.safeParse({
+      code: "AB",
+      createdBy: "u-1",
+      members: [],
+      createdAt: Date.now(),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a code longer than 6 characters", () => {
+    const result = GroupSessionSchema.safeParse({
+      code: "ABCDEFG",
+      createdBy: "u-1",
+      members: [],
+      createdAt: Date.now(),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts an empty members array", () => {
+    const result = GroupSessionSchema.safeParse({
+      code: "XYZ999",
+      createdBy: "u-leader",
+      members: [],
+      createdAt: 1000,
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("JoinSessionInputSchema", () => {
+  it("accepts a valid join input", () => {
+    const result = JoinSessionInputSchema.safeParse({
+      code: "ABC123",
+      userId: "u-2",
+      displayName: "Priya",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a code that is not exactly 6 characters", () => {
+    const result = JoinSessionInputSchema.safeParse({
+      code: "SHORT",
+      userId: "u-2",
+      displayName: "Test",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a missing displayName", () => {
+    const result = JoinSessionInputSchema.safeParse({
+      code: "ABC123",
+      userId: "u-2",
+    });
+    expect(result.success).toBe(false);
+  });
+});

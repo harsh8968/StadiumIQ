@@ -131,4 +131,35 @@ describe("shortestPath (Dijkstra with crowd weighting)", () => {
     expect(empty!.totalWeight).toBe(10);
     expect(red!.totalWeight).toBe(30);
   });
+
+  it("returns null if destination node does not exist in graph", () => {
+    const graph: VenueGraph = {
+      nodes: [{ id: "A", x: 0, y: 0 }],
+      edges: [],
+    };
+    const result = shortestPath(graph, "A", "UNKNOWN", {}, DEFAULT_SPEED, DEFAULT_ROUND_TO);
+    expect(result).toBeNull();
+  });
+
+  it("handles when source node does not exist in graph gracefully", () => {
+    const graph: VenueGraph = {
+      nodes: [{ id: "B", x: 1, y: 0 }],
+      edges: [],
+    };
+    const result = shortestPath(graph, "UNKNOWN", "B", {}, DEFAULT_SPEED, DEFAULT_ROUND_TO);
+    expect(result).toBeNull();
+  });
+
+  it("gracefully handles edges referencing unknown nodes", () => {
+    const graph: VenueGraph = {
+      nodes: [{ id: "A", x: 0, y: 0 }],
+      // Edge refers to 'B' which is not in nodes
+      edges: [{ from: "A", to: "B", weight: 10 }],
+    };
+    const result = shortestPath(graph, "A", "B", {}, DEFAULT_SPEED, DEFAULT_ROUND_TO);
+    // Since B is not in dist map initially, it will be added dynamically by the neighbors loop,
+    // but its initial dist is treated as Infinity fallback.
+    expect(result).not.toBeNull();
+    expect(result!.totalWeight).toBe(10);
+  });
 });

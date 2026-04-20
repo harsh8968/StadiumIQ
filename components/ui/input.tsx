@@ -3,9 +3,20 @@ import { Input as InputPrimitive } from "@base-ui/react/input"
 
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+/**
+ * Accessible text input built on top of Base UI's Input primitive.
+ *
+ * Wrapped with `React.forwardRef` so parent components (e.g. ComposerBar)
+ * can attach refs for programmatic focus management — important for the
+ * WCAG 2.1 keyboard focus pattern used in the concierge chat interface.
+ */
+const Input = React.forwardRef<
+  HTMLInputElement,
+  React.ComponentProps<"input">
+>(({ className, type, ...props }, ref) => {
   return (
     <InputPrimitive
+      ref={ref}
       type={type}
       data-slot="input"
       className={cn(
@@ -15,6 +26,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       {...props}
     />
   )
-}
+})
+Input.displayName = "Input"
 
 export { Input }

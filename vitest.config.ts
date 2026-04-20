@@ -21,6 +21,10 @@ export default defineConfig({
     environmentMatchGlobs: [
       ["tests/components/**", "jsdom"],
       ["tests/hooks/**", "jsdom"],
+      ["tests/mock/**", "node"],
+      ["tests/security/**", "node"],
+      ["tests/google/**", "node"],
+      ["tests/firebase/**", "node"],
     ],
     env: {
       // API route integration tests assume the demo's mock-mode flag so
@@ -35,6 +39,7 @@ export default defineConfig({
       reporter: ["text", "text-summary", "html", "lcov"],
       reportsDirectory: "./coverage",
       include: [
+        // Core business logic
         "lib/routing/**",
         "lib/mock/**",
         "lib/schemas/**",
@@ -42,7 +47,13 @@ export default defineConfig({
         "lib/security/**",
         "lib/constants.ts",
         "lib/env.ts",
+        // Google Services — all Google/Firebase/Gemini integrations
+        "lib/google/**",
+        "lib/firebase/**",
+        "lib/gemini/**",
+        // Hooks
         "hooks/**",
+        // Components
         "components/concierge/**",
         "components/order/**",
       ],

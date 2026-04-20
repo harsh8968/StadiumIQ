@@ -122,3 +122,66 @@ describe("lib/security/recaptcha — verifyRecaptchaToken", () => {
     expect(init.body).toContain("response=the-token");
   });
 });
+
+import { getRecaptchaToken } from "@/lib/security/recaptcha";
+
+describe("lib/security/recaptcha — getRecaptchaToken", () => {
+  beforeEach(() => {
+    // We are in node test environment, stub window to {}
+    vi.clearAllMocks();
+    vi.stubGlobal("window", {});
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns null when window is not defined (SSR)", async () => {
+    vi.unstubAllGlobals(); // Remove the window stub to trigger SSR path
+    const token = await getRecaptchaToken("test", undefined);
+    expect(token).toBeNull();
+  });
+
+  it("returns null when siteKey is falsy", async () => {
+    const token = await getRecaptchaToken("test", "");
+    expect(token).toBeNull();
+  });
+
+  it("returns null when grecaptcha is not loaded on window", async () => {
+    const token = await getRecaptchaToken("test", "test-site-key");
+    expect(token).toBeNull();
+  });
+
+  it("returns the token on successful execution", async () => {
+    const defaultWindow = globalThis.window as any;
+    defaultWindow.grecaptcha = {
+      ready: (cb: () => void) => cb(),
+      execute: vi.fn().mockResolvedValue("mock-token-123"),
+    };
+
+    const token = await getRecaptchaToken("test", "test-site-key");
+    expect(token).toBe("mock-token-123");
+    expect(defaultWindow.grecaptcha.execute).toHaveBeenCalledWith("test-site-key", { action: "test" });
+  });
+
+  it("returns null when execute rejects", async () => {
+    const defaultWindow = globalThis.window as any;
+    defaultWindow.grecaptcha = {
+      ready: (cb: () => void) => cb(),
+      execute: vi.fn().mockRejectedValue(new Error("Network Error")),
+    };
+
+    const token = await getRecaptchaToken("test", "test-site-key");
+    expect(token).toBeNull();
+  });
+
+  it("returns null when ready/execute throws synchronously", async () => {
+    const defaultWindow = globalThis.window as any;
+    defaultWindow.grecaptcha = {
+      ready: () => { throw new Error("Sync Error"); },
+    };
+
+    const token = await getRecaptchaToken("test", "test-site-key");
+    expect(token).toBeNull();
+  });
+});

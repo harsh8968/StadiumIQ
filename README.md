@@ -155,9 +155,13 @@ StadiumIQ is deliberately built on the Google stack end-to-end. Every box in the
 | Google service | SKU | What it does in StadiumIQ | Where it lives |
 |---|---|---|---|
 | **Gemini API** | `gemini-2.0-flash` (Generative Language API) | Powers the AI concierge with structured JSON output (`responseMimeType: "application/json"`) | `lib/gemini/client.ts`, `app/api/concierge/route.ts` |
+| **Google Places API** | Standard | Powers contextual out-of-venue discovery (parking, hotels, food, transit) directly from the concierge as deep links | `lib/google/places.ts` |
+| **Google Wallet API** | Generic Pass | Generates digital order receipts and event tickets for fans to save directly to their Google Wallet | `lib/google/wallet.ts` |
 | **Firebase Authentication** | Anonymous sign-in | Stable `uid` per device without any friction; survives refresh and drives Firestore ownership rules | `lib/firebase/client.ts`, `hooks/useAuthUid.ts` |
 | **Cloud Firestore** | Native mode | Mirrors every placed order and concierge query for analytics + recovery; `firestore.rules` pins reads/writes to `request.auth.uid` | `lib/firebase/orders.ts`, `lib/firebase/concierge.ts`, `firestore.rules` |
 | **Firebase Analytics + GA4** | Standard | Emits `app_open`, `concierge_query`, `order_placed`, `route_drawn` events for real product telemetry | `lib/firebase/analytics.ts` |
+| **Firebase Cloud Messaging** | Standard | Delivers native "order ready" push notifications via service worker | `lib/firebase/messaging.ts` |
+| **Firebase Performance** | Standard | Traces critical user journeys (Dijkstra compute latency, concierge round trips) for operator visibility | `lib/firebase/performance.ts` |
 | **Firebase Installations** | Standard | Backs FCM registration + analytics client IDs | implicit via `firebase` SDK |
 | **Identity Toolkit** | Standard | Backing API for anonymous auth tokens | implicit via `firebase/auth` |
 | **Secure Token Service** | Standard | Rotates short-lived ID tokens used by Firestore rules | implicit via `firebase/auth` |
